@@ -6,13 +6,25 @@
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/string.h>
+#include <linux/fs.h>
+#include <linux/proc_fs.h>
+#include <linux/vmalloc.h>
+#include <linux/uaccess.h>
 
+// Hook variable
 struct sys_hook *lkh_sys_hook;
+extern char filename_k[256];
+extern char pwd_k[256];
 
+// Dev file variable
 extern int user_pid;
 extern struct task_struct *curtask;
 extern struct file_operations dev_file_ops;
 static int major_num;
+
+// Proc file variable
+#define BUFSIZE  200
+static struct proc_dir_entry *ent;
 
 static
 uintptr_t hex_addr_to_pointer(const char *str) {
@@ -34,6 +46,36 @@ uintptr_t hex_addr_to_pointer(const char *str) {
   return sum;
 }
 
+static
+ssize_t sign_write(struct file *file, const char __user *ubuf,size_t count, loff_t *ppos) {
+  printk( KERN_DEBUG "write handler\n");
+	return -1;
+}
+ 
+static
+ssize_t sign_read(struct file *file, char __user *ubuf,size_t count, loff_t *ppos) {
+  char buf[BUFSIZE];
+  int len;
+
+  len = 0;
+	printk( KERN_DEBUG "read handler\n");
+  if(*ppos > 0 || count < BUFSIZE)
+		return 0;
+  len += sprintf(buf, "%s %s\n", filename_k, pwd_k);
+
+  if(copy_to_user(ubuf,buf,len))
+		return -EFAULT;
+
+	*ppos = len;
+	return len;	return 0;
+}
+ 
+static struct file_operations myops = {
+	.owner = THIS_MODULE,
+	.read = sign_read,
+	.write = sign_write,
+};
+
 /* Module parameter macros */
 static char *kbase32 = NULL, *kbase64 = NULL;
 module_param(kbase32, charp, 0);
@@ -46,6 +88,7 @@ static int __init module_entry(void) {
 
   printk(KERN_INFO "SIGN CHECKER: kernel module initializing...\n");
 
+  // Init hook
   /* Validate that we got parameters */
   if (kbase32 == NULL || kbase32[0] == '\0') {
     printk(KERN_INFO "failed to get x86 syscall table\n");
@@ -73,13 +116,18 @@ static int __init module_entry(void) {
 
   printk(KERN_INFO "SIGN CHECKER: execve hook successful\n");
 
+  // Init Dev file
   major_num = register_chrdev(0, "sign_passer", &dev_file_ops);
   if (major_num < 0) {
     printk(KERN_ALERT "SIGN CHECKER: Could not register device: %d\n", major_num);
+    return -1;
   } else {
     printk(KERN_INFO "SIGN CHECKER: sign_passer registered with device major number %d\n", major_num);
-    return 0;
   }
+
+  // Init Proc file
+  ent=proc_create("mydev",0660,NULL,&myops);
+  printk(KERN_INFO "SIGN CHECKER: proc created\n");
 
   printk(KERN_INFO "SIGN CHECKER: kernel module loaded\n");
   return 0;
@@ -89,6 +137,7 @@ static
 void __exit module_cleanup(void) {
   sys_hook_free(lkh_sys_hook);
   unregister_chrdev(major_num, "sign_passer");
+  proc_remove(ent);
   printk(KERN_INFO "SIGN CHECKER: kernel module has finished\n");
 }
 

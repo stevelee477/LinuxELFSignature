@@ -11,6 +11,7 @@ static const char *pwd_prefix = "PWD=";
 
 char filename_k[256];
 char pwd_k[256];
+char buf[256];
 
 asmlinkage
 long execve_hook(const char __user *filename, const char __user *const __user *argv, const char __user *const __user *envp) {
@@ -21,24 +22,27 @@ long execve_hook(const char __user *filename, const char __user *const __user *a
 
     sys_execve = (sys_execve_t)sys_hook_get_orig64(lkh_sys_hook, __NR_execve);
 
-    filename_k[255] = '\0';
+    buf[255] = '\0';
     pwd_k[255] = '\0';
 
-    res = strncpy_from_user(filename_k, filename, 255);
+    res = strncpy_from_user(buf, filename, 255);
     if (res > 0) {
         int i;
         size_t lenpre, lenstr;
 
-        lenstr = strlen(filename_k);
+        lenstr = strlen(buf);
 
         for (i = 0; i < sizeof(file_prefixs)/sizeof(char *); i++) {
             lenpre = strlen(file_prefixs[i]);
-            if (lenstr > lenpre && memcmp(file_prefixs[i], filename_k, lenpre) == 0) {
+            if (lenstr > lenpre && memcmp(file_prefixs[i], buf, lenpre) == 0) {
                 char *env;
                 
                 int i = 0;
                 size_t lenpwd_prefix;
                 size_t lenenv;
+
+                filename_k[255] = '\0';
+                strncpy(filename_k, buf, 255);
 
                 need_check = TRUE;
 
