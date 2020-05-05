@@ -13,3 +13,7 @@ KBASE32=$(cat /proc/kallsyms | grep " ia32_sys_call_table" | awk '{ print $1 }')
 KBASE64=$(cat /proc/kallsyms | grep " sys_call_table" | awk '{ print $1 }')
 
 insmod ./sign.ko kbase32="$KBASE32" kbase64="$KBASE64"
+
+MAJOR_NUM=$(dmesg | tail -n 1 | awk '{ print $NF }')
+
+mknod /dev/sign_passer c $MAJOR_NUM 0

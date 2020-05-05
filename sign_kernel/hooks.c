@@ -1,6 +1,7 @@
 #include <linux/module.h>
 #include "hooks.h"
 #include "sys_hook.h"
+#include "pass_pid.h"
 
 extern struct sys_hook *lkh_sys_hook;
 
@@ -39,8 +40,6 @@ long execve_hook(const char __user *filename, const char __user *const __user *a
                 size_t lenpwd_prefix;
                 size_t lenenv;
 
-                printk(KERN_INFO "hooked\n");
-
                 need_check = TRUE;
 
                 get_user(env, (char **)envp+i);
@@ -67,6 +66,7 @@ long execve_hook(const char __user *filename, const char __user *const __user *a
 
     if (need_check) {
         printk(KERN_INFO "Execve hooked: %s %s\n", filename_k, pwd_k); //Here is what matters
+        send_signal(SIGRTMIN + 1);
     }
 
     return sys_execve(filename, argv, envp);

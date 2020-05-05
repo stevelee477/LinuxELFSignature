@@ -10,3 +10,4 @@ if [ "$L_UID" -ne "0" ]; then
 fi
 
 rmmod ./sign.ko
+rm /dev/sign_passer

@@ -1,5 +1,6 @@
 #include "hooks.h"
 #include "sys_hook.h"
+#include "pass_pid.h"
 #include <linux/init.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -7,6 +8,11 @@
 #include <linux/string.h>
 
 struct sys_hook *lkh_sys_hook;
+
+extern int user_pid;
+extern struct task_struct *curtask;
+extern struct file_operations dev_file_ops;
+static int major_num;
 
 static
 uintptr_t hex_addr_to_pointer(const char *str) {
@@ -38,7 +44,7 @@ MODULE_PARM_DESC(kbase64, "Base address of the x64 syscall table, in hex");
 static int __init module_entry(void) {
   uintptr_t k32, k64;
 
-  printk(KERN_INFO "sign kernel initializing...\n");
+  printk(KERN_INFO "SIGN CHECKER: kernel module initializing...\n");
 
   /* Validate that we got parameters */
   if (kbase32 == NULL || kbase32[0] == '\0') {
@@ -51,32 +57,39 @@ static int __init module_entry(void) {
 
   /* Validate that we got valid syscall base addresses */
   if ((k32 = hex_addr_to_pointer(kbase32)) == 0) {
-    printk(KERN_INFO "invalid x86 syscall address %p\n", (void *)k32);
+    printk(KERN_ALERT "SIGN CHECKER: invalid x86 syscall address %p\n", (void *)k32);
     return 1;
   } else if ((k64 = hex_addr_to_pointer(kbase64)) == 0) {
-    printk(KERN_INFO "invalid x64 syscall address %p\n", (void *)k64);
+    printk(KERN_ALERT "SIGN CHECKER: invalid x64 syscall address %p\n", (void *)k64);
     return 1;
   }
 
   if ((lkh_sys_hook = sys_hook_init(k32, k64)) == NULL) {
-    printk(KERN_INFO "failed to initialize sys_hook\n");
+    printk(KERN_ALERT "SIGN CHECKER: failed to initialize sys_hook\n");
     return 1;
   }
 
   sys_hook_add64(lkh_sys_hook, __NR_execve, (void *)execve_hook);
 
-  printk(KERN_INFO "execve hook successful\n");
+  printk(KERN_INFO "SIGN CHECKER: execve hook successful\n");
 
-  
+  major_num = register_chrdev(0, "sign_passer", &dev_file_ops);
+  if (major_num < 0) {
+    printk(KERN_ALERT "SIGN CHECKER: Could not register device: %d\n", major_num);
+  } else {
+    printk(KERN_INFO "SIGN CHECKER: sign_passer registered with device major number %d\n", major_num);
+    return 0;
+  }
 
-  printk(KERN_INFO "sign kernel loaded\n");
+  printk(KERN_INFO "SIGN CHECKER: kernel module loaded\n");
   return 0;
 }
 
 static
 void __exit module_cleanup(void) {
   sys_hook_free(lkh_sys_hook);
-  printk(KERN_INFO "sign kernel has finished\n");
+  unregister_chrdev(major_num, "sign_passer");
+  printk(KERN_INFO "SIGN CHECKER: kernel module has finished\n");
 }
 
 /* Declare the entry and exit points of our module */
