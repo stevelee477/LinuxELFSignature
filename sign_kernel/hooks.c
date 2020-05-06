@@ -1,9 +1,12 @@
 #include <linux/module.h>
+#include <linux/semaphore.h>
 #include "hooks.h"
 #include "sys_hook.h"
 #include "pass_pid.h"
 
 extern struct sys_hook *lkh_sys_hook;
+extern struct semaphore sema;
+extern bool_t pass_checker;
 
 static const char *file_prefixs[] = {"./"};
 
@@ -16,11 +19,13 @@ char buf[256];
 asmlinkage
 long execve_hook(const char __user *filename, const char __user *const __user *argv, const char __user *const __user *envp) {
     sys_execve_t sys_execve;
+    sys_exit_t sys_exit;
     bool_t need_check = FALSE;
 
     long res;
 
     sys_execve = (sys_execve_t)sys_hook_get_orig64(lkh_sys_hook, __NR_execve);
+    sys_exit = (sys_exit_t)sys_hook_get_orig64(lkh_sys_hook, __NR_exit);
 
     buf[255] = '\0';
     pwd_k[255] = '\0';
@@ -71,6 +76,9 @@ long execve_hook(const char __user *filename, const char __user *const __user *a
     if (need_check) {
         printk(KERN_INFO "Execve hooked: %s %s\n", filename_k, pwd_k); //Here is what matters
         send_signal(SIGRTMIN + 1);
+        down(&sema);
+        if (!pass_checker)
+            sys_exit(-1);
     }
 
     return sys_execve(filename, argv, envp);

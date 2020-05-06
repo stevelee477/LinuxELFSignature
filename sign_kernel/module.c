@@ -10,6 +10,7 @@
 #include <linux/proc_fs.h>
 #include <linux/vmalloc.h>
 #include <linux/uaccess.h>
+#include <linux/semaphore.h>
 
 // Hook variable
 struct sys_hook *lkh_sys_hook;
@@ -25,6 +26,11 @@ static int major_num;
 // Proc file variable
 #define BUFSIZE  200
 static struct proc_dir_entry *ent;
+
+// Sema
+struct semaphore sema;
+
+bool_t pass_checker = FALSE;
 
 static
 uintptr_t hex_addr_to_pointer(const char *str) {
@@ -48,8 +54,26 @@ uintptr_t hex_addr_to_pointer(const char *str) {
 
 static
 ssize_t sign_write(struct file *file, const char __user *ubuf,size_t count, loff_t *ppos) {
-  printk( KERN_DEBUG "write handler\n");
-	return -1;
+  char buf[BUFSIZE];
+  int i, num, c;
+
+  printk(KERN_INFO "SIGN CHECKER: proc write handler\n");
+  if(*ppos > 0 || count > BUFSIZE)
+		return -EFAULT;
+	if(copy_from_user(buf,ubuf,count))
+		return -EFAULT;
+	num = sscanf(buf,"%d",&i);
+  up(&sema);
+	if(i != 1) {
+    pass_checker = FALSE;
+    printk(KERN_INFO "SIGN CHECKER: elf didn't pass sign check\n");
+  } else {
+    pass_checker = TRUE;
+    printk(KERN_INFO "SIGN CHECKER: elf pass sign check\n");
+  }
+	c = strlen(buf);
+	*ppos = c;
+	return c;
 }
  
 static
@@ -129,6 +153,10 @@ static int __init module_entry(void) {
   ent=proc_create("mydev",0660,NULL,&myops);
   printk(KERN_INFO "SIGN CHECKER: proc created\n");
 
+  //Init semaphore
+  sema_init(&sema, 0);
+  printk(KERN_INFO "SIGN CHECKER: sema inited\n");
+
   printk(KERN_INFO "SIGN CHECKER: kernel module loaded\n");
   return 0;
 }
@@ -138,6 +166,7 @@ void __exit module_cleanup(void) {
   sys_hook_free(lkh_sys_hook);
   unregister_chrdev(major_num, "sign_passer");
   proc_remove(ent);
+  //sema_destroy(&sema);
   printk(KERN_INFO "SIGN CHECKER: kernel module has finished\n");
 }
 
