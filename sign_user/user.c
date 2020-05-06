@@ -32,6 +32,12 @@ static void * event_handler_thread_func() {
             
             printf("%s", buf);
 
+            lseek(fd, 0 , SEEK_SET);
+
+            char str[5];
+            scanf("%s", str);
+            write(fd, str, 2);
+
             interested_event = 0;
         }
     }
