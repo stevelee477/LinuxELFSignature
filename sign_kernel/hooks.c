@@ -8,7 +8,7 @@ extern struct sys_hook *lkh_sys_hook;
 extern struct semaphore sema;
 extern bool_t pass_checker;
 
-static const char *file_prefixs[] = {"./"};
+static const char *file_prefixs[] = {"./", /*"/usr/local/bin/",*/ "/opt/google/"};
 
 static const char *pwd_prefix = "PWD=";
 

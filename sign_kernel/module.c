@@ -85,7 +85,8 @@ ssize_t sign_read(struct file *file, char __user *ubuf,size_t count, loff_t *ppo
 	printk( KERN_DEBUG "SIGN CHECKER: proc read handler\n");
   if(*ppos > 0 || count < BUFSIZE)
 		return 0;
-  len += sprintf(buf, "%s %s\n", filename_k, pwd_k);
+  // len += sprintf(buf, "%s %s\n", filename_k, pwd_k);
+  len += sprintf(buf, "%s\n", filename_k);
 
   if(copy_to_user(ubuf,buf,len))
 		return -EFAULT;
