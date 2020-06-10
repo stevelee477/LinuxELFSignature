@@ -1,0 +1,9 @@
+[Unit]
+Description=ELF Sign Service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/user
+
+[Install]
+WantedBy=multi-user.target
