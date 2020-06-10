@@ -11,36 +11,19 @@
 #include <signal.h>
 #include <sys/ioctl.h>
 #include <string.h>
+
+#include "pubkey.h" 
+#include "signelf.h"
+
 static sem_t event_sem;
 static volatile sig_atomic_t interested_event = 0;
-
-
-
-char verify(char *path){
-    char buf[256];
-    int result; 
-    char sCommand[256] = {'\0'};
-    strncpy(sCommand,"./verify ",sizeof("./verify "));
-    strcat(sCommand,path);
-    strcat(sCommand," > tmp");
-    int ret = system(sCommand);
-    FILE *fp;
-    fp = fopen("./tmp","r");
-    fgets(buf,10,fp);
-    fclose(fp);
-    system("rm tmp");
-    result = buf[8]-'0';
-    printf("result is :%d\n",result);
-    return buf[8];      // 返回char类型的结果、result是int类型的结果
-}
-
 
 void sig_handler_event1(int sig) {
     interested_event = 1;
     sem_post(&event_sem);
 }
 
-static void * event_handler_thread_func() {     //线程对应的函数
+static void * event_handler_thread_func(void*) {     //线程对应的函数
     printf("%s\n","event_handler_thread_func()");
     printf("in %s line %d\n", __func__, __LINE__);
     while(1){
@@ -53,15 +36,21 @@ static void * event_handler_thread_func() {     //线程对应的函数
             int fd = open("/proc/mydev", O_RDWR);
             int len = read(fd, buf, 256);       // ./a.out PWD=/home/paxos/LinuxELFSignature/sign_user
             
-            printf("%s", buf);
+            buf[strlen(buf)-1] = '\0';
+            printf("%s\n", buf);
 
             lseek(fd, 0 , SEEK_SET);
 
-            char str[5]={'\0'};
-            //scanf("%s", str);
-            // int result;
-            // result = verify(buf);
-            str[0] = verify(buf);
+            char str[2];
+            str[1] = '\0';
+            bool pass = signelf::verifyLib(keyBuf, sizeof(keyBuf), buf);
+            if (pass) {
+                str[0] = '1';
+            } else {
+                str[0] = '0';
+            }
+            printf("Sign: %s\n", str);
+            
             write(fd, str, 2);
             interested_event = 0;
         }

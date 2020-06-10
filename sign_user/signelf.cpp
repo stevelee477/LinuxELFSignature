@@ -39,7 +39,7 @@ namespace signelf
 		}
 	}
 
-	yourVector signHash(const unsigned char *hashBuf, size_t hashSize, unsigned char *keyBuf, size_t keySize)
+	yourVector signHash(const unsigned char *hashBuf, unsigned int hashSize, unsigned char *keyBuf, unsigned int keySize)
 	{
 		
 		RSA *pKey = NULL;
@@ -61,7 +61,7 @@ namespace signelf
 		return retVector;
 	}
 
-	bool verifyLib(unsigned char *keyBuf, size_t keySize, const char *binFile)
+	bool verifyLib(unsigned char *keyBuf, unsigned int keySize, const char *binFile)
 	{
 		bool result = false;
 		RSA *pKey = NULL;

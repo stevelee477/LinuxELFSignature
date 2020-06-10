@@ -15,13 +15,13 @@ namespace signelf
 
 	void hashSection(readelf::CReadElf *Elf, const char *sectionName, SHA_CTX *SHA);
 
-	yourVector hashSave(const char *binFile);			//生成.text 和 .data段的哈希储存在vector里
+	yourVector hashSave(const char *binFile); //生成.text 和 .data段的哈希储存在vector里
 
-	yourVector signHash(const unsigned char *hashBuf, unsigned int hashSize, unsigned char *keyBuf, unsigned int keySize);	//签名给定的hash并储存
+	yourVector signHash(const unsigned char *hashBuf, unsigned int hashSize, unsigned char *keyBuf, unsigned int keySize); //签名给定的hash并储存
 
 	bool verifyLib(unsigned char *keyBuf, unsigned int keySize, const char *binFile);
 
 	void hexPrint(const char *Name, const char *Buf, const unsigned int Length);
-}
+} // namespace signelf
 
 #endif

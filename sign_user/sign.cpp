@@ -6,12 +6,14 @@
 #include <cstring>
 #include <cstdio>
 #include <iterator>
+
 #include <openssl/evp.h>
 #include <openssl/pem.h>
 #include <openssl/bio.h>
-#include "signelf.cpp"
+
 #include "signelf.h"
-#include "privkey.h"	
+#include "privkey.h"
+
 int main(int argc, char **argv)
 {
 	int ret=0;

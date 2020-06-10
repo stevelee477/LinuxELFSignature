@@ -1,152 +1,24 @@
-# Makefile for sign-elf
+EXE = sign user
 
-# list of object (.o) files
+CXX = g++
 
-genkeypr_OBJ=					\
-	genkeypr.o					\
+LIBS = -lssl -lcrypto -lpthread -lstdc++
 
-libsign_OBJ=					\
-	readelf.o					\
-	signelf.o					\
+CXXFLAGS = -O2 -std=c++11
 
-sign_OBJ=						\
-	sign.o						\
-	
-verify_OBJ=						\
-	verify.o					\
+SIGN_OBJS = sign.o signelf.o readelf.o
 
-DEV_HDR=						\
-	signelf.h					\
-	readelf.h					\
-	pubkey.h					\
+USER_OBJS = user.o signelf.o readelf.o
 
-user_OBJ=						\
-	user.o						\
+all: $(EXE)
 
-genkeypr_TARGET= genkeypr
-libsign_TARGET= libsignelf.a
-sign_TARGET= signelf
-verify_TARGET= verifyelf
-user_TARGET= user
+sign: $(SIGN_OBJS)
+	$(CXX) -o sign $(CXXFLAGS) $(SIGN_OBJS) $(LIBS)
 
-# default targets
-TARGETS=						\
-	$(libsign_TARGET)			\
-	$(sign_TARGET)				\
-	$(user_TARGET)				\
+user: $(USER_OBJS)
+	$(CXX) -o user $(CXXFLAGS) $(USER_OBJS) $(LIBS)
 
-CTAGS= ctags
-TAGS= tags
-# directory where TARGET will be installed
-INSTALL_DIR= usr/bin
-INSTALL_DEV= usr/include/signelf1
-LIB_DIR= usr/lib
+.PHONY=clean
 
-# Include directories
-INCLUDES=
-
-LIBS= -lssl -lcrypto -lstdc++
-### Do NOT change anything below this line ###
-
-MOC= /usr/bin/moc
-LDFLAGS= -L. $(LIBS)
-
-# OS Specific settings
-# Compiler/linker
-CC= gcc
-CXX= g++
-AR= ar
-
-# Position independent code option
-PIC= -fPIC
-CCFLAGS = -std=c99 -lpthread
-CFLAGS= -Wall -g3\
-		-DQT_THREAD_SUPPORT\
-		-D_REENTRANT\
-		$(PIC)\
-		-I.\
-		$(INCLUDES)
-
-default all: $(TAGS) $(TARGETS)
-
-privkey:
-	openssl genrsa -out $@ 1024
-
-pubkey: privkey
-	openssl rsa -pubout -out $@ -in $<
-
-privkey.h: privkey $(genkeypr_TARGET)
-	./$(genkeypr_TARGET) priv privkey > $@
-	
-pubkey.h: pubkey $(genkeypr_TARGET)
-	./$(genkeypr_TARGET) pub pubkey > $@
-	
-$(TAGS):
-	$(CTAGS) *.h *.cpp
-
-.c.o:
-	$(CC) $(CFLAGS) $(ARCH) -c $*.c
-
-.cpp.o:
-	$(CXX) $(CFLAGS) $(ARCH) -c $*.cpp
-
-sign.o: privkey.h sign.cpp
-	$(CXX) $(CFLAGS) $(ARCH) -c $*.cpp
-
-verify.o: pubkey.h verify.cpp
-	$(CXX) $(CFLAGS) $(ARCH) -c $*.cpp
-
-user.o:
-	$(CC) -c user.c
-
-
-
-
-$(genkeypr_TARGET): $(genkeypr_OBJ)
-	$(CXX) -o $(genkeypr_TARGET) $(genkeypr_OBJ) $(LDFLAGS)
-
-$(libsign_TARGET): $(libsign_OBJ)
-	$(AR) rcs $@ $(libsign_OBJ)
-	
-$(sign_TARGET): privkey.h $(sign_OBJ) $(libsign_TARGET)
-	$(CXX) -o $(sign_TARGET) $(sign_OBJ) $(LDFLAGS) -lsignelf
-
-$(verify_TARGET): pubkey.h $(verify_OBJ) $(libsign_TARGET)
-	$(CXX) -o $(verify_TARGET) $(verify_OBJ) $(LDFLAGS) -lsignelf
-
-$(user_TARGET):	$(user_OBJ)
-	$(CC) -o $(user_TARGET) $(user_OBJ) -lpthread
-
-
-
-install: install-dev $(TARGETS)
-	mkdir -p $(DESTDIR)/$(INSTALL_DIR)
-	mkdir -p $(DESTDIR)/$(LIB_DIR)
-	install -m755 $(sign_TARGET) $(DESTDIR)/$(INSTALL_DIR)/$(sign_TARGET)
-	install -m644 $(libsign_TARGET) $(DESTDIR)/$(LIB_DIR)/$(libsign_TARGET)
-
-install-dev: $(DEV_HDR)
-	mkdir -p $(DESTDIR)/$(INSTALL_DEV)
-	cp $(DEV_HDR) $(DESTDIR)/$(INSTALL_DEV)
-
-install-lang:
-
-lang:
-
-uninstall:
-	rm -f $(DESTDIR)/$(INSTALL_DIR)/$(sign_TARGET)
-	rm -f $(DESTDIR)/$(LIB_DIR)/$(libsign_TARGET)
-
-cleankeys:
-	rm -f privkey pubkey privkey.h pubkey.h
-
-distclean clean:
-	rm -f tags $(genkeypr_TARGET) $(libsign_TARGET) $(sign_TARGET) $(verify_TARGET) $(genkeypr_OBJ) $(libsign_OBJ) $(sign_OBJ) $(verify_OBJ)
-	rm user user.o
-
-
-.PHONY=install install-lang uninstall install-dev clean distclean cleankeys lang
-
-
-
-
+clean:
+	rm -rf $(EXE) $(SIGN_OBJS) $(USER_OBJS)
