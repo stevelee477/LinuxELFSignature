@@ -9,3 +9,4 @@ systemctl stop sign
 
 rm /usr/bin/user
 rm /etc/systemd/system/sign.service
+rm /etc/public.pem

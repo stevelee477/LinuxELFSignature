@@ -7,5 +7,6 @@ fi
 
 cp user /usr/bin/
 cp sign.service /etc/systemd/system/
+cp public.pem /etc/
 
 systemctl start sign

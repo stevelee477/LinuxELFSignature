@@ -1,11 +1,31 @@
 #include <iostream>
 
-#include "pubkey.h"
+#include <openssl/sha.h>
+#include <openssl/rsa.h>
+#include <openssl/err.h>
+#include <openssl/pem.h>
+
 #include "signelf.h"
 
-int main(int argc, char **argv) {
-	bool bVerify = signelf::verify(keyBuf, sizeof(keyBuf), argv[1]);
+const char pub[] = "public.pem";
+
+int main(int argc, char *argv[]) {
+	BIO *bio = BIO_new_file(pub, "r");
+	char *nm = NULL;
+	unsigned char *keyBuf = NULL;
+	long len = 0;
+
+	if (!bio) {
+		std::cerr << "Read public key failed" << std::endl;
+	}
+	PEM_bytes_read_bio(&keyBuf, &len, &nm, PEM_STRING_PUBLIC, bio, NULL, NULL);
+	if (!keyBuf) {
+		std::cerr << "Read public key failed" << std::endl;
+	}
+
+	bool bVerify = signelf::verify(keyBuf, len, argv[1]);
 	std::cout << "Result: " << bVerify << std::endl;;
 
-	return 0;
+	return bVerify ? 0 : 1;
 }
+

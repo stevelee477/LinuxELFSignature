@@ -60,13 +60,11 @@ namespace signelf {
 		RSA *pKey = NULL;
 		BIO *pBio;
 		pBio = BIO_new_mem_buf(keyBuf, keySize);
-		if(pBio)
-		{
+		if(pBio) {
 			d2i_RSA_PUBKEY_bio(pBio, &pKey);
 			BIO_free(pBio);
 		}
-		if(pKey)
-		{
+		if(pKey) {
 			readelf::ReadElf elf(binFile);
 			readelf::SectionVec yourSig = elf.getSection(".sig");
 			if(!yourSig.empty())
@@ -75,6 +73,7 @@ namespace signelf {
 				result = (0 != RSA_verify(NID_sha1, &szHash[0], szHash.size(), &yourSig[0], yourSig.size(), pKey));	//验证
 				RSA_free(pKey);
 			} else {
+				std::cout << "No sig found" << std::endl;
 				return true;
 			}
 		}

@@ -1,3 +1,4 @@
+#include <iostream>
 #include <errno.h>
 #include <fcntl.h>
 #include <pthread.h>
@@ -11,16 +12,22 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "pubkey.h"
+#include <openssl/sha.h>
+#include <openssl/rsa.h>
+#include <openssl/err.h>
+#include <openssl/pem.h>
+
 #include "signelf.h"
 
+char *nm = NULL;
+unsigned char *keyBuf = NULL;
+long keylen = 0;
+
 static sem_t event_sem;
-static volatile sig_atomic_t interested_event = 0;
 
 static void *event_handler_thread_func(void *);
 
 void sig_handler_event1(int sig) {
-    interested_event = 1;
     sem_post(&event_sem);
 
     pthread_t event_thread;
@@ -45,23 +52,29 @@ static void *event_handler_thread_func(void *) {
 
     char str[2];
     str[1] = '\0';
-    bool pass = signelf::verify(keyBuf, sizeof(keyBuf), buf);
+    bool pass = signelf::verify(keyBuf, keylen, buf);
     if (pass)
-    {
         str[0] = '1';
-    }
     else
-    {
         str[0] = '0';
-    }
     printf("Sign: %s\n", str);
 
     write(fd, str, 2);
     pthread_exit(NULL);
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
+    BIO *bio = BIO_new_file(argv[1], "r");
+
+	if (!bio) {
+		std::cerr << "Read public key failed" << std::endl;
+	}
+	PEM_bytes_read_bio(&keyBuf, &keylen, &nm, PEM_STRING_PUBLIC, bio, NULL, NULL);
+	if (!keyBuf) {
+		std::cerr << "Read public key failed" << std::endl;
+	}
+    std::cout << "Read public key success" << std::endl;
+
     sem_init(&event_sem, 0, 0); // 起一个线程然后初始化信号量
 
     // Signal handler init

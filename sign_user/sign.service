@@ -3,7 +3,7 @@ Description=ELF Sign Service
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/user
+ExecStart=/usr/bin/user /etc/public.pem
 
 [Install]
 WantedBy=multi-user.target
