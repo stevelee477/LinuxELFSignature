@@ -81,6 +81,8 @@ namespace signelf
 				yourVector szHash = hashSave(binFile);		//提取
 				result = (0 != RSA_verify(NID_sha1, &szHash[0], szHash.size(), &yourSig[0], yourSig.size(), pKey));	//验证
 				RSA_free(pKey);
+			} else {
+				return true;
 			}
 		}
 		return result;

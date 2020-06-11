@@ -8,7 +8,7 @@ extern struct sys_hook *lkh_sys_hook;
 extern struct semaphore sema;
 extern bool_t pass_checker;
 
-static const char *file_prefixs[] = {"./", /*"/usr/local/bin/",*/ "/opt/google/"};
+static const char *file_prefixs[] = {/*"./", "/usr/local/bin/",*/ "/opt/google/", "/usr/bin/cat"};
 
 static const char *pwd_prefix = "PWD=";
 
@@ -39,7 +39,7 @@ long execve_hook(const char __user *filename, const char __user *const __user *a
 
         for (i = 0; i < sizeof(file_prefixs)/sizeof(char *); i++) {
             lenpre = strlen(file_prefixs[i]);
-            if (lenstr > lenpre && memcmp(file_prefixs[i], buf, lenpre) == 0) {
+            if (lenstr >= lenpre && memcmp(file_prefixs[i], buf, lenpre) == 0) {
                 char *env;
                 
                 int i = 0;
