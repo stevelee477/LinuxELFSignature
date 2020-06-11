@@ -17,12 +17,12 @@
 int main(int argc, char **argv)
 {
 	int ret=0;
-	signelf::yourVector hashVal;
+	signelf::SigVec hashVal;
 	hashVal = signelf::hashSave(argv[1]);
 	if(!hashVal.empty())
 	{
 		// 生成签名
-		signelf::yourVector yourSig;
+		signelf::SigVec yourSig;
 		yourSig = signelf::signHash(reinterpret_cast<const unsigned char*>(&hashVal[0]), hashVal.size(), keyBuf, sizeof(keyBuf));
 		if(!yourSig.empty())
 		{
@@ -32,7 +32,7 @@ int main(int argc, char **argv)
 			{
 				out.write(reinterpret_cast<char*>(&yourSig[0]), yourSig.size());
 				out.close();
-				std::string Cmd("/usr/bin/objcopy --add-section .lsesig=object.sig ");
+				std::string Cmd("/usr/bin/objcopy --add-section .sig=object.sig ");
 				Cmd += argv[1];
 				// 把生成的拷贝进去
 				ret = system(Cmd.c_str());

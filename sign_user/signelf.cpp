@@ -5,16 +5,14 @@
 #include "readelf.h"
 #include "signelf.h"
 
-namespace signelf
-{
-	yourVector hashSave(const char *binFile)
-	{
-		yourVector retVector;	//返回vector
+namespace signelf {
+	SigVec hashSave(const char *binFile) {
+		SigVec retVector;	//返回vector
 
 		// 创建SHA哈希内容
 		SHA_CTX sha;
 		SHA1_Init(&sha);
-		readelf::CReadElf elf(binFile);	// 实例化一个CReadElf类出elf
+		readelf::ReadElf elf(binFile);	// 实例化一个ReadElf类出elf
 		hashSection(&elf, ".data", &sha);
 		hashSection(&elf, ".text", &sha);
 		hashSection(&elf, ".rodata", &sha);
@@ -30,21 +28,17 @@ namespace signelf
 		return retVector;
 	}
 
-	void hashSection(readelf::CReadElf *Elf, const char *sectionName, SHA_CTX *SHA)	//取出相应的section然后hash
-	{
-		readelf::yourVector section = Elf->getSection(sectionName);
-		if(!section.empty())
-		{
+	void hashSection(readelf::ReadElf *Elf, const char *sectionName, SHA_CTX *SHA) { //取出相应的section然后hash
+		readelf::SectionVec section = Elf->getSection(sectionName);
+		if(!section.empty()) {
 			SHA1_Update(SHA, &section[0], section.size());				// 每次都Update一下
 		}
 	}
 
-	yourVector signHash(const unsigned char *hashBuf, unsigned int hashSize, unsigned char *keyBuf, unsigned int keySize)
-	{
-		
+	SigVec signHash(const unsigned char *hashBuf, unsigned int hashSize, unsigned char *keyBuf, unsigned int keySize) {
 		RSA *pKey = NULL;
 		BIO *pBio = NULL;
-		yourVector retVector;
+		SigVec retVector;
 		pBio = BIO_new_mem_buf(keyBuf, keySize);
 		if(pBio)
 		{
@@ -61,8 +55,7 @@ namespace signelf
 		return retVector;
 	}
 
-	bool verifyLib(unsigned char *keyBuf, unsigned int keySize, const char *binFile)
-	{
+	bool verify(unsigned char *keyBuf, unsigned int keySize, const char *binFile) { //验证签名
 		bool result = false;
 		RSA *pKey = NULL;
 		BIO *pBio;
@@ -74,11 +67,11 @@ namespace signelf
 		}
 		if(pKey)
 		{
-			readelf::CReadElf elf(binFile);
-			readelf::yourVector yourSig = elf.getSection(".lsesig");
+			readelf::ReadElf elf(binFile);
+			readelf::SectionVec yourSig = elf.getSection(".sig");
 			if(!yourSig.empty())
 			{
-				yourVector szHash = hashSave(binFile);		//提取
+				SigVec szHash = hashSave(binFile);		//提取
 				result = (0 != RSA_verify(NID_sha1, &szHash[0], szHash.size(), &yourSig[0], yourSig.size(), pKey));	//验证
 				RSA_free(pKey);
 			} else {
@@ -87,15 +80,4 @@ namespace signelf
 		}
 		return result;
 	}
-
-	void hexPrint(const char *Name, const char *Buf, const size_t Length)
-	{
-		std::cout << "hash (" << Length << ") ---\n" << std::endl;
-		for(unsigned int i=0 ; i < Length ; ++i)
-		{
-			std::cout << std::hex << std::setw(2) << std::setfill('0') << Buf[i];
-		}
-		std::cout << "\n---" << std::endl;
-	}
-
 }

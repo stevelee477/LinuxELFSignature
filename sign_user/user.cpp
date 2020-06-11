@@ -45,7 +45,7 @@ static void *event_handler_thread_func(void *) {
 
     char str[2];
     str[1] = '\0';
-    bool pass = signelf::verifyLib(keyBuf, sizeof(keyBuf), buf);
+    bool pass = signelf::verify(keyBuf, sizeof(keyBuf), buf);
     if (pass)
     {
         str[0] = '1';

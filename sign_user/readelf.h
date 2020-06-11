@@ -1,28 +1,23 @@
-#ifndef __CReadElf_H__
-#define __CReadElf_H__
+#ifndef __ReadElf_H__
+#define __ReadElf_H__
 
 #include <elf.h>
 #include <fstream>
 #include <map>
 #include <string>
 #include <vector>
-namespace readelf
-{
-
+namespace readelf {
 	typedef std::vector<char> nameArray;
-	typedef std::vector<unsigned char> yourVector;
-	typedef std::map<std::string, Elf64_Shdr> mapSection;
+	typedef std::vector<unsigned char> SectionVec;
+	typedef std::map<std::string, Elf64_Shdr> SectionMap;
 
-	class CReadElf
-	{
+	class ReadElf {
 	public:
-		CReadElf(const char *szFileName);
-		virtual ~CReadElf();
-		virtual yourVector getSection(const char *szSectionName);
-
+		ReadElf(const char *fileName);
+		SectionVec getSection(const char *szSectionName);
 	protected:
 		Elf64_Ehdr m_elf;
-		mapSection m_mpSections;
+		SectionMap m_mpSections;
 		std::ifstream m_fElf; //文件输入流
 	};
 
